@@ -1,5 +1,6 @@
 const userServices = require("../services/userServices.js");
 const msg = "error";
+const { validationResult } = require("express-validator");
 
 module.exports = {
     getUsers: async (req, res) => {
@@ -38,11 +39,18 @@ module.exports = {
     },
     createUser: async (req, res) => {
         try {
-            let creation = req.body
-            await userServices.createUser(creation);
-            res.status(200).json({
-                message: 'Creando usuario con exito!'
-            })
+            let { email } = req.body
+            let user = await userServices.getUserEmail(email);
+            if(user){
+                res.status(200).json({
+                    message: 'El usuario ya existe'
+                })
+            }else{
+                await userServices.createUser(req.body);
+                res.status(200).json({
+                    message: 'Creando usuario con exito!'
+                })
+            }
         }catch(e) {
             res.status(500).json({
                 message: msg,
@@ -50,20 +58,33 @@ module.exports = {
             })
         }
     }, 
-    viewUserEdit: async (req, res) => {
-        try{
-            let user = req.params.id
-            let nextEdit = await userServices.viewUserEdit(user);
-            if(nextEdit){
-                res.status(200).json({
-                    data: nextEdit
-                })
+    userLogin: async (req, res) => {
+        try {
+            let error = validationResult(req)
+            let {email, password} = req.body
+            let user = await userServices.getUserEmail(email)
+            if(error.isEmpty()){
+                if(user){
+                    if(password == user.password){
+                        res.status(200).json({
+                            message: 'Puede loguearse'
+                        })
+                    }else{
+                        res.status(404).json({
+                            message: 'Datos incorrectos'
+                        })
+                    }
+                }else{
+                    res.status(404).json({
+                        message: 'Datos incorrectos'
+                    })
+                }
             }else{
-                res.status(404).json({
-                    message: 'User not found!'
+                res.status(500).json({
+                    error: error
                 })
             }
-        }catch(e){
+        }catch (e) {
             res.status(500).json({
                 message: msg,
                 error: e,
@@ -85,28 +106,7 @@ module.exports = {
                 error: e,
             })
         }
-    }, 
-    viewUserDelete: async(req, res) => {
-        try {
-            let userId = req.params.id;
-            let nextDelet = await userServices.viewUserDelete(userId);
-            if(nextDelet){
-                res.status(200).json({
-                    message: '¿Es el usuario que desea eliminar?',
-                    data: nextDelet
-                })
-            }else{
-                res.status(404).json({
-                    message: 'User not found!'
-                })
-            }
-        }catch (e){
-            res.status(500).json({
-                message: msg,
-                error: e,
-            })
-        }
-    }, 
+    },
     deleteUser: async (req, res) => {
         try {
             let userId = req.params.id
