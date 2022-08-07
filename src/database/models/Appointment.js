@@ -40,12 +40,5 @@ module.exports = (sequelize, DataTypes) => {
 
     const Appointment = sequelize.define(alias, cols, config);
 
-    Appointment.associate = models => {
-        Appointment.belongsTo(models.User, {
-            as: "appointment",
-            foreignKey: "id_user"
-        })
-    };
-
     return Appointment;
 };
