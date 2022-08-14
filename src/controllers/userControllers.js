@@ -1,6 +1,9 @@
+const JWT = require("jsonwebtoken");
+const bcrypt = require("bcrypt");
 const userServices = require("../services/userServices.js");
 const msg = "error";
 const { validationResult } = require("express-validator");
+require("dotenv").config();
 
 module.exports = {
     getUsers: async (req, res) => {
@@ -39,17 +42,32 @@ module.exports = {
     },
     createUser: async (req, res) => {
         try {
-            let { email } = req.body
-            let user = await userServices.getUserEmail(email);
-            if(user){
-                res.status(200).json({
-                    message: 'El usuario ya existe'
+            let error = validationResult(req);
+            let {password, email} = req.body
+            let userFind = await userServices.getUserEmail(email);
+            if(!error.isEmpty()){
+                res.status(404).json({
+                    message: "error"
                 })
-            }else{
-                await userServices.createUser(req.body);
-                res.status(200).json({
-                    message: 'Creando usuario con exito!'
-                })
+            } else {
+                if(userFind){
+                    res.status(200).json({
+                        message: 'Ya existe un usuario con ese email'
+                    })
+                }else{
+                    let passEncriptada = bcrypt.hashSync(password, 12);
+                    let user = {
+                        name: req.body.name,
+                        last_name: req.body.last_name,
+                        email: req.body.email,
+                        password: passEncriptada,
+                        phone: req.body.phone,
+                    };
+                    await userServices.createUser(user);
+                    res.status(200).json({
+                        message: 'Creando usuario con exito!'
+                    })
+                }
             }
         }catch(e) {
             res.status(500).json({
@@ -61,28 +79,38 @@ module.exports = {
     userLogin: async (req, res) => {
         try {
             let error = validationResult(req)
-            let {email, password} = req.body
-            let user = await userServices.getUserEmail(email)
-            if(error.isEmpty()){
-                if(user){
-                    if(password == user.password){
-                        res.status(200).json({
-                            message: 'Puede loguearse'
+            if(!error.isEmpty()){
+                return res.status(404).json({
+                    error: 'Error de la validacion'
+                })
+            }else{
+                let {email, password} = req.body
+                let user = await userServices.getUserEmail(email)
+                if(!user){
+                    console.log('aca llegue 2');
+                    return res.status(404).json({
+                        error: "Credenciales incorrectas"
+                    })
+                } else {
+                    let valPass = bcrypt.compareSync(password, user.password);
+                    if(!valPass){
+                        return res.status(200).json({
+                            error: "Credenciales incorrectas"
                         })
                     }else{
-                        res.status(404).json({
-                            message: 'Datos incorrectos'
+                        const token = JWT.sign(
+                            {email: email, id: user.id},
+                            process.env.SECRET_KEY,
+                            {
+                                expiresIn: "20m"
+                            }
+                        );
+                        return res.status(200).json({
+                            msg: "Exito",
+                            token: token,
                         })
                     }
-                }else{
-                    res.status(404).json({
-                        message: 'Datos incorrectos'
-                    })
                 }
-            }else{
-                res.status(500).json({
-                    error: error
-                })
             }
         }catch (e) {
             res.status(500).json({
