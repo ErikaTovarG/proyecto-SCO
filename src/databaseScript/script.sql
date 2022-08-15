@@ -51,3 +51,9 @@ deleted INT DEFAULT 0,
 id_user INT,
 foreign key (id_user) references users(id)
 );
+
+CREATE TABLE tokens (
+    id INT AUTO_INCREMENT,
+    token VARCHAR(300) NOT NULL,
+    PRIMARY KEY (id)
+);

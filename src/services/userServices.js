@@ -1,28 +1,33 @@
 const db = require("../database/models");
+const sequelize = require("sequelize");
 
 module.exports = {
-    getUsersAll: async () => { 
-        let users = await db.User.findAll();
+    getAll: async () => { 
+        let users = await db.User.findAll({
+            attributes: ["id", "name", "last_name", "phone"]
+        });
         return users
     },
-    getUserUnique: async (resId) => {
+    getById: async (id) => {
         let user = await db.User.findOne({ 
-            where: { id: resId } 
+            where: { id: id } 
         })
         return user
     },
-    getUserEmail: async (email) => {
+    getByEmail: async (email) => {
         let user = await db.User.findOne({ 
             where: { email: email } 
         })
         return user
     },
-    createUser: async (objeto) => {
-        await db.User.create(objeto)
+    createUser: async (user) => {
+        await db.User.create(user)
     },
-    editUser: async (resBody, resId) => {
-        await db.User.update(resBody, { 
-            where: { id: resId } 
+    editUser: async (body) => {
+        let {id}= body;
+        delete body.id;
+        await db.User.update(body, { 
+            where: { id: id } 
         }) 
     },
     deleteUser: async (userid) => {

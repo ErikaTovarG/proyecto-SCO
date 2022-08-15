@@ -25,19 +25,10 @@ module.exports = {
             .trim()
             .escape()
     ],
-    userLogin: [
-        check("email")
+    update : [
+        check("id")
             .notEmpty()
-            .withMessage('Debe agregar un email')
-            .bail()
-            .isEmail()
-            .withMessage('No es un email valido')
-            .trim()
-            .escape(),
-        check("password")
-            .notEmpty()
-            .trim()
-            .escape()
+            .isNumeric()
     ]
 }
 

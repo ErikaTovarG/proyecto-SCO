@@ -1,4 +1,3 @@
-const JWT = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
 const userServices = require("../services/userServices.js");
 const msg = "error";
@@ -6,9 +5,9 @@ const { validationResult } = require("express-validator");
 require("dotenv").config();
 
 module.exports = {
-    getUsers: async (req, res) => {
+    getAll: async (req, res) => {
         try {
-            let users = await userServices.getUsersAll();
+            let users = await userServices.getAll();
                 res.status(200).json({
                     count : users.length,
                     data: users,
@@ -20,10 +19,10 @@ module.exports = {
             })
         }
     }, 
-    getUser: async (req, res) => {
+    getOne: async (req, res) => {
         try {
             let userReq = req.params.id
-            let user = await userServices.getUserUnique(userReq)
+            let user = await userServices.getById(userReq)
             if(user){
                 res.status(200).json({
                     data: user,
@@ -40,11 +39,11 @@ module.exports = {
             })
         }
     },
-    createUser: async (req, res) => {
+    create: async (req, res) => {
         try {
             let error = validationResult(req);
             let {password, email} = req.body
-            let userFind = await userServices.getUserEmail(email);
+            let userFind = await userServices.getByEmail(email);
             if(!error.isEmpty()){
                 res.status(404).json({
                     message: "error"
@@ -76,58 +75,20 @@ module.exports = {
             })
         }
     }, 
-    userLogin: async (req, res) => {
+    edit: async (req, res) => {
         try {
-            let error = validationResult(req)
-            if(!error.isEmpty()){
-                return res.status(404).json({
-                    error: 'Error de la validacion'
+            req.body.id = req.params.id
+            let user = await userServices.getById(req.body.id)
+            if(!user){
+                res.status(200).json({
+                    message:'User not found',
                 })
             }else{
-                let {email, password} = req.body
-                let user = await userServices.getUserEmail(email)
-                if(!user){
-                    console.log('aca llegue 2');
-                    return res.status(404).json({
-                        error: "Credenciales incorrectas"
-                    })
-                } else {
-                    let valPass = bcrypt.compareSync(password, user.password);
-                    if(!valPass){
-                        return res.status(200).json({
-                            error: "Credenciales incorrectas"
-                        })
-                    }else{
-                        const token = JWT.sign(
-                            {email: email, id: user.id},
-                            process.env.SECRET_KEY,
-                            {
-                                expiresIn: "20m"
-                            }
-                        );
-                        return res.status(200).json({
-                            msg: "Exito",
-                            token: token,
-                        })
-                    }
-                }
+                await userServices.editUser(req.body);
+                res.status(200).json({
+                    message: 'Modificando usuario con exito!'
+                })
             }
-        }catch (e) {
-            res.status(500).json({
-                message: msg,
-                error: e,
-            })
-        }
-    },
-    editUser: async (req, res) => {
-        try {
-            let body = req.body
-            let edit = req.params.id
-            await userServices.editUser(body, edit);
-            res.status(200).json({
-                message: 'Modificando usuario con exito!'
-            })
-
         }catch (e){
             res.status(500).json({
                 message: msg,
@@ -135,7 +96,7 @@ module.exports = {
             })
         }
     },
-    deleteUser: async (req, res) => {
+    delete: async (req, res) => {
         try {
             let userId = req.params.id
             await userServices.deleteUser(userId);
